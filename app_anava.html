@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>English Magic World ✨</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { --pink: #fdf2f8; --dark-pink: #be185d; --blue: #3b82f6; --purple: #a855f7; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--pink); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; margin: 0; overflow: hidden; box-sizing: border-box; }
+        
+        /* Screens */
+        #menu-screen, #game-screen, #admin-screen { display: none; flex-direction: column; align-items: center; width: 100%; height: 100vh; justify-content: center; }
+        #menu-screen { display: flex; background: linear-gradient(180deg, #fdf2f8 0%, #fae8ff 100%); }
+
+        .menu-title { font-size: 45px; color: var(--dark-pink); margin: 0; text-shadow: 3px 3px 0px white; animation: float 3s ease-in-out infinite; }
+        .menu-btn { width: 300px; height: 110px; border-radius: 60px; border: none; font-size: 24px; font-weight: 900; cursor: pointer; color: white; transition: 0.3s; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 15px; }
+        .btn-game-1 { background: var(--blue); box-shadow: 0 10px 0 #1d4ed8; }
+        .btn-game-2 { background: var(--purple); box-shadow: 0 10px 0 #7e22ce; }
+        .btn-admin { background: #64748b; box-shadow: 0 8px 0 #334155; width: 200px; height: 60px; font-size: 18px; }
+        .menu-btn:active { transform: translateY(8px); box-shadow: none; }
+
+        /* Game UI */
+        .counter-container { display: flex; gap: 10px; margin-bottom: 8px; margin-top: 20px;}
+        .counter { font-size: 18px; color: #ad1457; font-weight: bold; background: white; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card { width: 310px; height: 350px; background: white; border-radius: 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; border: 12px solid #fbcfe8; position: relative; }
+        .listening-active { border-color: #fbbf24 !important; box-shadow: 0 0 30px rgba(251, 191, 36, 0.7); }
+        .emoji { font-size: 80px; }
+        .en-word { font-size: 28px; font-weight: 900; color: var(--dark-pink); direction: ltr; }
+        .controls { margin-top: 20px; display: flex; gap: 20px; align-items: center; direction: ltr; }
+        .mic-btn { width: 90px; height: 90px; background: var(--blue); border-radius: 50%; font-size: 40px; border: none; cursor: pointer; color: white; box-shadow: 0 8px 0 #1d4ed8; }
+        .mic-btn.is-listening { background: #fbbf24; box-shadow: 0 8px 0 #d97706; animation: pulse 1s infinite; }
+        
+        /* Admin UI */
+        #admin-screen { padding: 20px; overflow-y: auto; justify-content: flex-start; background: white; }
+        .admin-box { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
+        input { padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; }
+        .word-list-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; align-items: center; }
+        .delete-btn { background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; }
+        
+        .home-btn { position: absolute; top: 15px; right: 15px; background: #eee; width: 45px; height: 45px; border-radius: 12px; border: none; cursor: pointer; font-size: 20px; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <div id="menu-screen">
+        <h1 class="menu-title">English Magic ✨</h1>
+        <button class="menu-btn btn-game-1" onclick="initAudio(); startApp(1)">דברי באנגלית 🎤</button>
+        <button class="menu-btn btn-game-2" onclick="initAudio(); startApp(2)">תרגום לעברית 🧠</button>
+        <button class="menu-btn btn-admin" onclick="showAdmin()">⚙️ ניהול מילים</button>
+    </div>
+
+    <div id="game-screen">
+        <button class="home-btn" onclick="goToMenu()">🏠</button>
+        <div class="counter-container">
+            <div class="counter" id="counter">1 / 42</div>
+            <div class="counter" id="streak-counter" style="background:#dcfce7">0</div>
+        </div>
+        <div class="card" id="main-card">
+            <div class="emoji" id="display-emoji"></div>
+            <div class="en-word" id="display-en"></div>
+            <div id="transcript-text" style="color:var(--blue); font-weight:bold; margin-top:10px;"></div>
+        </div>
+        <div class="controls">
+            <button class="nav-btn" style="font-size:30px; border:none; background:none; cursor:pointer;" onclick="prevWord()">⬅️</button>
+            <button id="mic-button" class="mic-btn" onclick="toggleMic()">🎤</button>
+            <button class="nav-btn" style="font-size:30px; border:none; background:none; cursor:pointer;" onclick="nextWord()">➡️</button>
+        </div>
+    </div>
+
+    <div id="admin-screen">
+        <button class="home-btn" onclick="goToMenu()">🏠</button>
+        <h2>ניהול מילים</h2>
+        <div class="admin-box">
+            <input type="text" id="new-en" placeholder="Word in English (e.g. Apple)">
+            <input type="text" id="new-hb" placeholder="מילה בעברית (למשל: תפוח)">
+            <input type="text" id="new-icon" placeholder="Emoji (e.g. 🍎)">
+            <button onclick="addWord()" style="background:var(--blue); color:white; padding:10px; border:none; border-radius:10px; font-weight:bold;">הוסף מילה לרשימה</button>
+        </div>
+        <hr style="width:100%; margin:20px 0;">
+        <div id="word-list-container" style="width:100%;"></div>
+    </div>
+
+    <script>
+        // המילים המקוריות
+        const defaultWords = [
+            { en: 'Welcome', hb: 'ברוכים הבאים', icon: '👋' }, { en: 'Hello', hb: 'שלום', icon: '😊' },
+            { en: 'Good afternoon', hb: 'צהריים טובים', icon: '☀️' }, { en: 'Thank you', hb: 'תודה', icon: '🙏' },
+            { en: "What's your name?", hb: 'מה השם שלך', icon: '❓' }, { en: 'My name is', hb: 'השם שלי', icon: '🆔' },
+            { en: 'Sunday', hb: 'יום ראשון', icon: '📅' }, { en: 'Yes', hb: 'כן', icon: '✅' },
+            { en: 'No', hb: 'לא', icon: '❌' }, { en: 'OK', hb: 'אוקיי', icon: '🆗' },
+            { en: 'Goodbye', hb: 'להתראות', icon: '👋' }, { en: 'How are you today?', hb: 'מה שלומך היום', icon: '💖' },
+            { en: "Thank you I'm Ok", hb: 'תודה אני בסדר', icon: '👍' }, { en: 'I love you', hb: 'אני אוהב אותך', icon: '🤟' },
+            { en: 'Red', hb: 'אדום', icon: '🔴' }, { en: 'Green', hb: 'ירוק', icon: '🟢' },
+            { en: 'Pink', hb: 'ורוד', icon: '💗' }, { en: 'Blue', hb: 'כחול', icon: '🔵' },
+            { en: 'Light blue', hb: 'תכלת', icon: '🩵' }, { en: 'Orange', hb: 'כתום', icon: '🧡' },
+            { en: 'Gray', hb: 'אפור', icon: '🔘' }, { en: 'Brown', hb: 'חום', icon: '🤎' },
+            { en: 'Purple', hb: 'סגול', icon: '💜' }, { en: 'White', hb: 'לבן', icon: '🤍' },
+            { en: 'Black', hb: 'שחור', icon: '🖤' }, { en: 'Cat', hb: 'חתול', icon: '🐈' },
+            { en: 'Dog', hb: 'כלב', icon: '🐕' }, { en: 'Monkey', hb: 'קוף', icon: '🐒' },
+            { en: 'Frog', hb: 'צפרדע', icon: '🐸' }, { en: 'Snake', hb: 'נחש', icon: '🐍' },
+            { en: 'Rabbit', hb: 'ארנב', icon: '🐰' }, { en: 'Cow', hb: 'פרה', icon: '🐄' },
+            { en: 'Fish', hb: 'דג', icon: '🐟' }, { en: 'Shark', hb: 'כריש', icon: '🦈' },
+            { en: 'Dreidel', hb: 'סביבון', icon: '🌀' }, { en: 'Dance', hb: 'לרקוד', icon: '💃' },
+            { en: 'Jump', hb: 'לקפוץ', icon: '🦘' }, { en: 'Stop', hb: 'לעצור', icon: '🛑' },
+            { en: 'Party', hb: 'מסיבה', icon: '🎉' }, { en: 'Light', hb: 'אור', icon: '💡' },
+            { en: 'Happy birthday', hb: 'יום הולדת שמח', icon: '🎂' }, { en: 'Good morning', hb: 'בוקר טוב', icon: '🌅' }
+        ];
+
+        let words = JSON.parse(localStorage.getItem('myMagicWords')) || defaultWords;
+        let currentIndex = 0, successCount = 0, currentGameMode = 1, isProcessing = false, hasSucceeded = false;
+        let recognition, silenceTimer, audioCtx;
+
+        // --- Audio Logic ---
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.interimResults = true;
+            recognition.onstart = () => {
+                isProcessing = true;
+                document.getElementById('mic-button').classList.add('is-listening');
+                document.getElementById('main-card').classList.add('listening-active');
+                clearTimeout(silenceTimer);
+                silenceTimer = setTimeout(() => { if (isProcessing && !hasSucceeded) recognition.stop(); }, 7000);
+            };
+            recognition.onresult = (event) => {
+                let result = Array.from(event.results).map(r => r[0].transcript).join('').toLowerCase().trim();
+                document.getElementById('transcript-text').innerText = result;
+                const target = (currentGameMode === 1) ? words[currentIndex].en.toLowerCase().replace(/[?.,!]/g, "") : words[currentIndex].hb;
+                if (result.includes(target)) { hasSucceeded = true; clearTimeout(silenceTimer); recognition.stop(); handleSuccess(); }
+            };
+            recognition.onend = () => {
+                isProcessing = false;
+                document.getElementById('mic-button').classList.remove('is-listening');
+                document.getElementById('main-card').classList.remove('listening-active');
+                if (!hasSucceeded && document.getElementById('game-screen').style.display === 'flex') {
+                    playFailSound(); setTimeout(speakCurrentWord, 800);
+                }
+            };
+        }
+
+        // --- Navigation ---
+        function startApp(mode) {
+            currentGameMode = mode; currentIndex = 0; successCount = 0;
+            recognition.lang = (mode === 1) ? 'en-US' : 'he-IL';
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            updateCard();
+        }
+
+        function showAdmin() {
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('admin-screen').style.display = 'flex';
+            renderAdminList();
+        }
+
+        function goToMenu() {
+            hasSucceeded = true; window.speechSynthesis.cancel();
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('admin-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'flex';
+        }
+
+        // --- Admin Functions ---
+        function addWord() {
+            const en = document.getElementById('new-en').value;
+            const hb = document.getElementById('new-hb').value;
+            const icon = document.getElementById('new-icon').value || '✨';
+            if (en && hb) {
+                words.unshift({ en, hb, icon });
+                saveWords();
+                renderAdminList();
+                document.getElementById('new-en').value = '';
+                document.getElementById('new-hb').value = '';
+                document.getElementById('new-icon').value = '';
+            }
+        }
+
+        function deleteWord(index) {
+            words.splice(index, 1);
+            saveWords();
+            renderAdminList();
+        }
+
+        function saveWords() { localStorage.setItem('myMagicWords', JSON.stringify(words)); }
+
+        function renderAdminList() {
+            const container = document.getElementById('word-list-container');
+            container.innerHTML = words.map((w, i) => `
+                <div class="word-list-item">
+                    <span>${w.icon} ${w.en} - ${w.hb}</span>
+                    <button class="delete-btn" onclick="deleteWord(${i})">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        // --- Game Logic ---
+        function updateCard() {
+            hasSucceeded = false;
+            document.getElementById('transcript-text').innerText = "";
+            const item = words[currentIndex];
+            document.getElementById('display-emoji').innerText = item.icon;
+            document.getElementById('display-en').innerText = (currentGameMode === 1) ? item.en : '???';
+            document.getElementById('counter').innerText = `${currentIndex + 1} / ${words.length}`;
+            document.getElementById('streak-counter').innerText = `הצלחות: ${successCount}`;
+            speakCurrentWord();
+        }
+
+        function speakCurrentWord() {
+            if (hasSucceeded) return;
+            window.speechSynthesis.cancel();
+            const item = words[currentIndex];
+            const msg = (currentGameMode === 1) ? item.en : `How do you say ${item.en} in Hebrew?`;
+            const u = new SpeechSynthesisUtterance(msg);
+            u.lang = 'en-US'; u.rate = 0.8;
+            u.onend = () => { if (!hasSucceeded) try { recognition.start(); } catch(e){} };
+            window.speechSynthesis.speak(u);
+        }
+
+        function handleSuccess() {
+            successCount++;
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            playWinSound();
+            if (successCount % 5 === 0) {
+                setTimeout(() => {
+                    const compl = ["Very Good!", "Superstar!", "Amazing!", "Excellent!"][Math.floor(Math.random()*4)];
+                    const u = new SpeechSynthesisUtterance(compl); u.lang = 'en-US';
+                    u.onend = () => nextWord(); window.speechSynthesis.speak(u);
+                }, 1000);
+            } else { setTimeout(nextWord, 1500); }
+        }
+
+        function toggleMic() { if (isProcessing) recognition.stop(); else try { recognition.start(); } catch(e){} }
+        function nextWord() { currentIndex = (currentIndex + 1) % words.length; updateCard(); }
+        function prevWord() { currentIndex = (currentIndex - 1 + words.length) % words.length; updateCard(); }
+
+        function playWinSound() {
+            if (!audioCtx) return;
+            [523, 659, 783].forEach((f, i) => {
+                const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                o.frequency.value = f; g.gain.value = 0.05;
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(audioCtx.currentTime + i*0.1); o.stop(audioCtx.currentTime + i*0.1 + 0.2);
+            });
+        }
+
+        function playFailSound() {
+            if (!audioCtx) return;
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.frequency.setValueAtTime(800, audioCtx.currentTime);
+            o.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.2);
+            g.gain.value = 0.05; o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + 0.2);
+        }
+    </script>
+</body>
+</html>
