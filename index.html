@@ -60,7 +60,7 @@
         <div class="card" id="main-card">
             <div class="emoji" id="display-emoji"></div>
             <div class="en-word" id="display-en"></div>
-            <div id="transcript-text" style="color:var(--blue); font-weight:bold; margin-top:10px;"></div>
+            <div id="transcript-text" style="color:var(--blue); font-weight:bold; margin-top:10px; min-height: 24px;"></div>
         </div>
         <div class="controls">
             <button class="nav-btn" style="font-size:30px; border:none; background:none; cursor:pointer;" onclick="prevWord()">⬅️</button>
@@ -83,7 +83,6 @@
     </div>
 
     <script>
-        // המילים המקוריות
         const defaultWords = [
             { en: 'Welcome', hb: 'ברוכים הבאים', icon: '👋' }, { en: 'Hello', hb: 'שלום', icon: '😊' },
             { en: 'Good afternoon', hb: 'צהריים טובים', icon: '☀️' }, { en: 'Thank you', hb: 'תודה', icon: '🙏' },
@@ -112,8 +111,17 @@
         let currentIndex = 0, successCount = 0, currentGameMode = 1, isProcessing = false, hasSucceeded = false;
         let recognition, silenceTimer, audioCtx;
 
-        // --- Audio Logic ---
+        const compliments = ["Very Good!", "Superstar!", "Amazing!", "Excellent!", "Fantastic!", "Great job!"];
+
         function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+
+        // פונקציית ערבוב (Fisher-Yates)
+        function shuffleWords() {
+            for (let i = words.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [words[i], words[j]] = [words[j], words[i]];
+            }
+        }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
@@ -142,9 +150,11 @@
             };
         }
 
-        // --- Navigation ---
         function startApp(mode) {
-            currentGameMode = mode; currentIndex = 0; successCount = 0;
+            currentGameMode = mode; 
+            currentIndex = 0; 
+            successCount = 0;
+            shuffleWords(); // ערבוב המילים בכל תחילת משחק
             recognition.lang = (mode === 1) ? 'en-US' : 'he-IL';
             document.getElementById('menu-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'flex';
@@ -164,7 +174,6 @@
             document.getElementById('menu-screen').style.display = 'flex';
         }
 
-        // --- Admin Functions ---
         function addWord() {
             const en = document.getElementById('new-en').value;
             const hb = document.getElementById('new-hb').value;
@@ -197,7 +206,6 @@
             `).join('');
         }
 
-        // --- Game Logic ---
         function updateCard() {
             hasSucceeded = false;
             document.getElementById('transcript-text').innerText = "";
@@ -226,7 +234,7 @@
             playWinSound();
             if (successCount % 5 === 0) {
                 setTimeout(() => {
-                    const compl = ["Very Good!", "Superstar!", "Amazing!", "Excellent!"][Math.floor(Math.random()*4)];
+                    const compl = compliments[Math.floor(Math.random()*compliments.length)];
                     const u = new SpeechSynthesisUtterance(compl); u.lang = 'en-US';
                     u.onend = () => nextWord(); window.speechSynthesis.speak(u);
                 }, 1000);
